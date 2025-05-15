@@ -1,0 +1,57 @@
+---
+title: "Learning log"
+format: html
+---
+
+::: {.callout-note collapse="true"}
+## 📌 May 00th, 2025 (Click to expand)
+- Tasks completed:
+    - 
+    - 
+    - 
+- Insights gained:
+    - 
+    - 
+- Next steps:
+    - 
+    - 
+:::
+
+::: {.callout-note collapse="true"}
+## 📌 May 13th, 2025 (Click to expand)
+- Tasks completed:
+    - Tried *stravalib*, but it complicates current workflow and requires a lot of redesign. So shelving this to try at a later point. Downside is, I have to hardcode token for the initial auth.
+    - Handled read scope limitation by going through the auth workflow again to get a code with activities:read_all scope. Had to do with using `approval_prompt=force&scope=read,activity:read_all`.
+    - Modularized code by sourcing helper function from py script and having separate scripts for auth, data pull and push.
+- Insights gained:
+- Next steps:
+    - Loop through activities result to grab data from 2020 till 2025. 
+    - Research and implement a good schema for the MySQL DB. 
+:::
+::: {.callout-note collapse="true"}
+## 📌 May 7th, 2025 (Click to expand)
+- Tasks completed:
+    - Set up API Authentication and handling expiring tokens.
+    - Blocked by missing read scope, despite requesting and getting a response with read, read_all scope via authorization request. 
+- Insights gained:
+  - *requests* package can handle most API requests including auth, data pulls and manual data ingestion. 
+  - Handling expiring tokens might take some time to get used to. 
+- Next steps:
+  - Incorporate [stravalib](https://stravalib.readthedocs.io/en/latest/get-started/authenticate-with-strava.html) for handling Strava API requests. 
+  - Find a way to pull Strava activities evading the missing read scope problem.
+:::
+----------
+Resources and References
+
+- 
+- 
+
+----------
+Future Improvements
+
+-   
+-   
+
+
+
+
