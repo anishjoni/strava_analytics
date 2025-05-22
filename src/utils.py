@@ -14,9 +14,9 @@ def save_tokens(tokens, path="../data/tokens.json"):
 
 def is_token_expired(expires_at):
     if type(expires_at) == str:
-        expires_at = int(expires_at)
+        expires_at = int(float(expires_at)) # Convert to float first, then int
     else:
-        expires_at
+        expires_at # No change if it's already a number (int or float)
     return datetime.now().timestamp() >= expires_at
 
 def refresh_token_if_needed(client_id, client_secret):
