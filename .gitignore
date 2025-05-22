@@ -1,2 +1,5 @@
 strava_env/
 tokens.json
+src/access_token.json
+src/00-initial_auth.ipynb
+
