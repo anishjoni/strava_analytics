@@ -1,5 +1,147 @@
+# Virtual Environments
 strava_env/
+.venv/
+venv/
+env/
+ENV/
+
+# Sensitive Configuration Files
+.env
 tokens.json
 src/access_token.json
+data/tokens.json
+data/*.json
+
+# Authentication and API Keys
 src/00-initial_auth.ipynb
+**/credentials.json
+**/secrets.json
+**/*_secret*
+**/*_key*
+**/*_token*
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDEs
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Data files (add specific patterns as needed)
+data/*.csv
+data/*.parquet
+data/*.xlsx
+data/*.json
+data/tokens.json
+!data/.gitkeep
+
+# Prefect
+.prefect/
+prefect.db
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+
+# Local configuration overrides
+local_settings.py
+local_config.py
 

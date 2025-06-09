@@ -1,0 +1,75 @@
+# Prefect deployment configuration
+name: strava-analytics
+prefect-version: 3.4.5
+
+# Build configuration
+build:
+  - prefect.deployments.steps.run_shell_script:
+      id: get-commit-hash
+      script: git rev-parse --short HEAD
+      stream_output: false
+
+# Push configuration  
+push:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /mnt/persist/workspace
+
+# Pull configuration
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /mnt/persist/workspace
+
+# Deployment definitions
+deployments:
+  # Token management - runs every hour
+  - name: token-management-hourly
+    entrypoint: src/flows/token_management.py:proactive_token_management_flow
+    schedule:
+      cron: "0 * * * *"
+      timezone: "UTC"
+    description: "Proactive token management that refreshes tokens before they expire"
+    tags: ["strava", "token-management", "automated"]
+    parameters: {}
+    work_pool:
+      name: default-agent-pool
+      work_queue_name: default
+
+  # Daily sync - runs every day at 6 AM UTC
+  - name: daily-strava-sync
+    entrypoint: src/flows/main_pipeline.py:daily_strava_sync_flow
+    schedule:
+      cron: "0 6 * * *"
+      timezone: "UTC"
+    description: "Daily sync of recent Strava activities"
+    tags: ["strava", "daily-sync", "automated"]
+    parameters: {}
+    work_pool:
+      name: default-agent-pool
+      work_queue_name: default
+
+  # Weekly full sync - runs every Sunday at 2 AM UTC
+  - name: weekly-strava-sync
+    entrypoint: src/flows/main_pipeline.py:weekly_full_sync_flow
+    schedule:
+      cron: "0 2 * * 0"
+      timezone: "UTC"
+    description: "Weekly full sync of all Strava activities"
+    tags: ["strava", "weekly-sync", "automated"]
+    parameters: {}
+    work_pool:
+      name: default-agent-pool
+      work_queue_name: default
+
+  # Manual full pipeline - no schedule, run on demand
+  - name: manual-full-pipeline
+    entrypoint: src/flows/main_pipeline.py:strava_analytics_pipeline_flow
+    description: "Manual execution of the full Strava analytics pipeline"
+    tags: ["strava", "manual", "full-pipeline"]
+    parameters:
+      max_pages: 200
+      table_name: "activities"
+      if_exists: "append"
+      remove_duplicates: true
+    work_pool:
+      name: default-agent-pool
+      work_queue_name: default
