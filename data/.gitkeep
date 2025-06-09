@@ -1,0 +1,5 @@
+# This file ensures the data directory is tracked by git
+# The data directory will contain:
+# - tokens.json (ignored)
+# - activity data files (ignored)
+# - temporary processing files (ignored)

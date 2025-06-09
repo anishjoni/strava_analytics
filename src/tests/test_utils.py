@@ -3,7 +3,7 @@ from unittest.mock import patch, mock_open, Mock # Added Mock
 import json
 import requests # Added requests for mocking
 from datetime import datetime, timedelta
-from src.utils import load_tokens, save_tokens, is_token_expired, refresh_token_if_needed # Added refresh_token_if_needed
+from strava_analytics.utils import load_tokens, save_tokens, is_token_expired, refresh_token_if_needed # Added refresh_token_if_needed
 
 class TestUtils(unittest.TestCase):
 

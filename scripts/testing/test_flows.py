@@ -5,19 +5,19 @@ import sys
 from pathlib import Path
 
 # Add project root to Python path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
 def test_imports():
     """Test that all modules can be imported."""
     print("📦 Testing Imports...")
-    
+
     try:
-        from src.flows.token_management import token_refresh_flow, check_token_status
-        from src.flows.data_extraction import strava_data_extraction_flow
-        from src.flows.data_transformation import strava_data_transformation_flow
-        from src.flows.database_operations import strava_database_operations_flow
-        from src.flows.main_pipeline import strava_analytics_pipeline_flow
+        from src.strava_analytics.flows.token_management import token_refresh_flow, check_token_status
+        from src.strava_analytics.flows.data_extraction import strava_data_extraction_flow
+        from src.strava_analytics.flows.data_transformation import strava_data_transformation_flow
+        from src.strava_analytics.flows.database_operations import strava_database_operations_flow
+        from src.strava_analytics.flows.main_pipeline import strava_analytics_pipeline_flow
         
         print("   ✅ All imports successful")
         return True
@@ -32,7 +32,7 @@ def test_configuration():
     print("⚙️ Testing Configuration...")
     
     try:
-        from src.config import settings
+        from src.strava_analytics.config import settings
         
         print(f"   Database URL: {settings.database_url}")
         print(f"   Tokens path: {settings.tokens_path}")

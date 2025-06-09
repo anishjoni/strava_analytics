@@ -8,8 +8,8 @@ from prefect import flow, task, get_run_logger
 from prefect.tasks import task_input_hash
 from prefect.cache_policies import INPUTS
 
-from src.config import settings
-from src.utils import (
+from ..config import settings
+from ..utils import (
     load_tokens,
     save_tokens,
     refresh_token_if_needed,

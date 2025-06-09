@@ -23,7 +23,7 @@ pull:
 deployments:
   # Token management - runs every hour
   - name: token-management-hourly
-    entrypoint: src/flows/token_management.py:proactive_token_management_flow
+    entrypoint: src/strava_analytics/flows/token_management.py:proactive_token_management_flow
     schedule:
       cron: "0 * * * *"
       timezone: "UTC"
@@ -36,7 +36,7 @@ deployments:
 
   # Daily sync - runs every day at 6 AM UTC
   - name: daily-strava-sync
-    entrypoint: src/flows/main_pipeline.py:daily_strava_sync_flow
+    entrypoint: src/strava_analytics/flows/main_pipeline.py:daily_strava_sync_flow
     schedule:
       cron: "0 6 * * *"
       timezone: "UTC"
@@ -49,7 +49,7 @@ deployments:
 
   # Weekly full sync - runs every Sunday at 2 AM UTC
   - name: weekly-strava-sync
-    entrypoint: src/flows/main_pipeline.py:weekly_full_sync_flow
+    entrypoint: src/strava_analytics/flows/main_pipeline.py:weekly_full_sync_flow
     schedule:
       cron: "0 2 * * 0"
       timezone: "UTC"
@@ -62,7 +62,7 @@ deployments:
 
   # Manual full pipeline - no schedule, run on demand
   - name: manual-full-pipeline
-    entrypoint: src/flows/main_pipeline.py:strava_analytics_pipeline_flow
+    entrypoint: src/strava_analytics/flows/main_pipeline.py:strava_analytics_pipeline_flow
     description: "Manual execution of the full Strava analytics pipeline"
     tags: ["strava", "manual", "full-pipeline"]
     parameters:

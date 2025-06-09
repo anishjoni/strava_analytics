@@ -7,9 +7,9 @@ import subprocess
 from pathlib import Path
 
 # Add project root to Python path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.config import settings
+from src.strava_analytics.config import settings
 
 
 def run_command(command: str, description: str = None):

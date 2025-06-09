@@ -12,19 +12,19 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}Step 1: Fixing permissions...${NC}"
-./fix_permissions.sh
+./scripts/setup/fix_permissions.sh
 
 echo ""
 echo -e "${BLUE}Step 2: Quick validation test...${NC}"
-./quick_test.sh
+./scripts/testing/quick_test.sh
 
 echo ""
 echo -e "${BLUE}Step 3: Comprehensive functionality test...${NC}"
-source .venv/bin/activate && python test_with_sample_data.py
+source .venv/bin/activate && python scripts/testing/test_with_sample_data.py
 
 echo ""
 echo -e "${BLUE}Step 4: Prefect flows test...${NC}"
-source .venv/bin/activate && python scripts/test_flows.py
+source .venv/bin/activate && python scripts/testing/test_flows.py
 
 echo ""
 echo "======================================="

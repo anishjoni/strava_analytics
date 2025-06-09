@@ -10,14 +10,14 @@ import polars as pl
 from datetime import datetime
 
 # Add project root to Python path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 def test_data_transformation():
     """Test data transformation with sample data."""
     print("🔄 Testing Data Transformation Flow...")
     
     try:
-        from src.flows.data_transformation import strava_data_transformation_flow
+        from src.strava_analytics.flows.data_transformation import strava_data_transformation_flow
         
         # Create sample Strava API response data
         sample_activities = {
@@ -79,7 +79,7 @@ def test_token_management_structure():
     print("🔑 Testing Token Management Flow Structure...")
     
     try:
-        from src.flows.token_management import check_token_status, token_refresh_flow
+        from src.strava_analytics.flows.token_management import check_token_status, token_refresh_flow
         
         # Test that functions are importable and callable
         print("   ✅ Token management functions imported successfully")
@@ -105,8 +105,8 @@ def test_database_operations_structure():
     print("💾 Testing Database Operations Structure...")
     
     try:
-        from src.flows.database_operations import (
-            convert_polars_to_pandas, 
+        from src.strava_analytics.flows.database_operations import (
+            convert_polars_to_pandas,
             check_for_duplicates,
             remove_duplicates
         )
@@ -145,7 +145,7 @@ def test_main_pipeline_structure():
     print("🚀 Testing Main Pipeline Structure...")
     
     try:
-        from src.flows.main_pipeline import (
+        from src.strava_analytics.flows.main_pipeline import (
             strava_analytics_pipeline_flow,
             daily_strava_sync_flow,
             weekly_full_sync_flow
@@ -167,7 +167,7 @@ def test_configuration():
     print("⚙️ Testing Configuration...")
     
     try:
-        from src.config import settings
+        from src.strava_analytics.config import settings
         
         print(f"   📁 Data directory: {settings.data_dir}")
         print(f"   🗄️ Database URL: {settings.database_url}")

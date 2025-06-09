@@ -36,22 +36,46 @@ An automated data pipeline that extracts, transforms, and loads Strava activity 
 
 ```
 strava_analytics/
-├── src/
-│   ├── flows/                    # Prefect flow definitions
-│   │   ├── token_management.py   # Token refresh and validation
-│   │   ├── data_extraction.py    # Strava API data fetching
-│   │   ├── data_transformation.py # Data cleaning and feature engineering
-│   │   ├── database_operations.py # Database loading operations
-│   │   └── main_pipeline.py      # Main orchestration flow
-│   ├── config.py                 # Configuration management
-│   ├── utils.py                  # Utility functions
-│   └── tests/                    # Unit tests
-├── scripts/
-│   ├── setup_prefect.py          # Setup and deployment script
-│   └── test_flows.py             # Flow testing script
-├── prefect.yaml                  # Prefect deployment configuration
-├── .env.example                  # Environment variables template
-└── README.md                     # This file
+├── README.md                     # Main documentation
+├── pyproject.toml               # Project configuration
+├── prefect.yaml                 # Prefect deployment config
+├── .env.example                 # Environment template
+├── setup.sh                    # Quick setup script
+├── test.sh                     # Quick test script
+│
+├── docs/                        # Documentation
+│   ├── QUICKSTART.md           # Quick start guide
+│   └── REMOTE_ACCESS_GUIDE.md  # Remote access instructions
+│
+├── scripts/                     # Utility scripts
+│   ├── setup/                   # Setup and installation
+│   │   ├── setup_prefect.py    # Prefect setup
+│   │   ├── fix_permissions.sh  # Permission fixes
+│   │   └── activate_env.sh     # Environment activation
+│   ├── testing/                 # Testing scripts
+│   │   ├── test_flows.py       # Basic flow tests
+│   │   ├── test_with_sample_data.py # Comprehensive tests
+│   │   └── run_complete_test.sh # Complete test suite
+│   └── utils/                   # Utility scripts
+│       └── connect_prefect_ui.sh # SSH tunnel helper
+│
+├── src/strava_analytics/        # Main package
+│   ├── __init__.py             # Package initialization
+│   ├── config.py               # Configuration management
+│   ├── utils.py                # Utility functions
+│   └── flows/                  # Prefect flows
+│       ├── token_management.py # Token refresh and validation
+│       ├── data_extraction.py  # Strava API data fetching
+│       ├── data_transformation.py # Data cleaning
+│       ├── database_operations.py # Database operations
+│       └── main_pipeline.py    # Main orchestration
+│
+├── notebooks/                   # Jupyter notebooks
+│   ├── 01-pull_data_from_strava.ipynb
+│   └── 03-push_data_to_DB.ipynb
+│
+└── data/                        # Data directory
+    └── .gitkeep                # Ensures directory is tracked
 ```
 
 ## 🛠️ Setup Instructions
@@ -95,10 +119,10 @@ You'll need to perform initial Strava authentication to get refresh tokens. This
 ### 4. Fix Permissions (if using SSH/remote workspace)
 ```bash
 # Fix all permissions
-./fix_permissions.sh
+./scripts/setup/fix_permissions.sh
 
 # Activate virtual environment
-source activate_env.sh
+source scripts/setup/activate_env.sh
 # OR manually: source .venv/bin/activate
 ```
 

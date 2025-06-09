@@ -6,10 +6,10 @@ from typing import Dict, Any, Optional
 from prefect import flow, get_run_logger
 # Note: Deployment creation is now handled via prefect.yaml and CLI
 
-from src.flows.token_management import proactive_token_management_flow
-from src.flows.data_extraction import strava_data_extraction_flow
-from src.flows.data_transformation import strava_data_transformation_flow
-from src.flows.database_operations import strava_database_operations_flow
+from .token_management import proactive_token_management_flow
+from .data_extraction import strava_data_extraction_flow
+from .data_transformation import strava_data_transformation_flow
+from .database_operations import strava_database_operations_flow
 
 
 @flow(name="strava-analytics-pipeline", log_prints=True)

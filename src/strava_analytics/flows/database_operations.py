@@ -10,7 +10,7 @@ from prefect import flow, task, get_run_logger
 from prefect.tasks import task_input_hash
 from prefect.cache_policies import INPUTS
 
-from src.config import settings
+from ..config import settings
 
 
 @task(retries=3, retry_delay_seconds=30)
