@@ -37,7 +37,7 @@ def load_tokens() -> Dict[str, Any]:
         return {} #
 
 def save_tokens(tokens: Dict[str, Any], path: Optional[str] = None) -> None:
-  """Save Strava tokens to the Prefect JSON block."""
+    """Save Strava tokens to the Prefect JSON block."""
     logger.info(f"Attempting to save tokens to Prefect JSON Block: {TOKEN_DATA_BLOCK_NAME}")
     try:
         # Create a new JSON block instance with the updated data
