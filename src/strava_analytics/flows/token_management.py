@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 from typing import Dict, Any
-import logging
+
 
 from prefect import flow, task, get_run_logger
 from prefect.tasks import task_input_hash
@@ -31,7 +31,31 @@ def check_token_status() -> Dict[str, Any]:
     
     try:
         tokens = load_tokens()
+
+
+        # DELETE after local run
+        # Get client credentials from secret blocks
+        from prefect.blocks.system import Secret
         
+        try:
+                # Load the client ID secret block
+                client_id_block = Secret.load("strava-client-id")
+                client_id = client_id_block.get()
+                logger.info("Successfully loaded client ID from Prefect Secret block.")
+
+                # Load the client secret secret block
+                client_secret_block = Secret.load("strava-client-secret")
+                client_secret = client_secret_block.get()
+                logger.info("Successfully loaded client secret from Prefect Secret block.")
+
+                if not client_id or not client_secret:
+                    raise ValueError("Client ID and/or Client Secret not found in Prefect Secret blocks.")
+
+        except Exception as e:
+            logger.error(f"Failed to load Strava API credentials from Prefect Secret blocks: {e}")
+            raise  # Re-raise to ensure the task fails
+
+
         # Check if required fields exist
         required_fields = ['access_token', 'refresh_token', 'expires_at']
         missing_fields = [field for field in required_fields if field not in tokens]
@@ -91,12 +115,14 @@ def refresh_access_token(force_refresh: bool = False) -> Dict[str, Any]:
         strava_secrets = Secret.load("strava-api-credentials")
         client_id = strava_secrets.get("strava-client-id")
         client_secret = strava_secrets.get("strava-client-secret")
+        logger.info(client_id)
         if not client_id or not client_secret:
             raise ValueError("Client ID and Client Secret not found in Prefect Secret block 'strava-api-credentials'")
         
         # Get client credentials from tokens or settings
         # client_id = tokens.get('client_id') or settings.strava_client_id
         # client_secret = tokens.get('client_secret') or settings.strava_client_secret
+
         
         logger.info(f"Refreshing token (force_refresh={force_refresh})")
         
