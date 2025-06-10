@@ -6,8 +6,8 @@ from typing import Dict, Any, Optional
 import requests
 
 from prefect.blocks.system import Secret
-from prefect.blocks.data import JSON # Import the JSON block
-from prefect.utilities.logging import get_run_logger
+from prefect.variables import Variable
+from prefect import get_run_logger
 
 # Add the project root to Python path to avoid relative import issues
 
@@ -15,38 +15,48 @@ from strava_analytics.config import settings
 
 logger = get_run_logger()
 
-# Define your JSON Block name
-TOKEN_DATA_BLOCK_NAME = "strava-auth-token" 
+# Define your Prefect Variable name for storing tokens
+TOKEN_DATA_VARIABLE_NAME = "strava-auth-token"
 
 # Utility functions
 def load_tokens() -> Dict[str, Any]:
-    """Load Strava tokens from the Prefect JSON block."""
-    logger.info(f"Attempting to load tokens from Prefect JSON Block: {TOKEN_DATA_BLOCK_NAME}")
+    """Load Strava tokens from the Prefect Variable."""
+    logger.info(f"Attempting to load tokens from Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
     try:
-        json_block = JSON.load(TOKEN_DATA_BLOCK_NAME)
-        # The .value attribute of a JSON block holds the deserialized JSON data
-        tokens = json_block.value
-        if not tokens: # If the block is empty JSON {}
-            logger.warning(f"Prefect JSON Block '{TOKEN_DATA_BLOCK_NAME}' is empty. No existing token found.")
+        token_json = Variable.get(TOKEN_DATA_VARIABLE_NAME)
+        if token_json is None:
+            logger.warning(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' not found. No existing token found.")
             return {}
-        logger.info(f"Successfully loaded token data from block. Keys: {list(tokens.keys())}")
+
+        # Parse the JSON string to dictionary
+        if isinstance(token_json, str):
+            tokens = json.loads(token_json)
+        elif isinstance(token_json, dict):
+            tokens = token_json
+        else:
+            logger.warning(f"Unexpected token data type: {type(token_json)}")
+            return {}
+        if not tokens: # If the variable is empty JSON {}
+            logger.warning(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' is empty. No existing token found.")
+            return {}
+        logger.info(f"Successfully loaded token data from variable. Keys: {list(tokens.keys())}")
         return tokens
     except Exception as e:
-        logger.error(f"Failed to load tokens from Prefect JSON Block '{TOKEN_DATA_BLOCK_NAME}': {e}")
-        # If the block itself doesn't exist, this will also catch it
+        logger.error(f"Failed to load tokens from Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
+        # If the variable itself doesn't exist, this will also catch it
         return {} #
 
 def save_tokens(tokens: Dict[str, Any], path: Optional[str] = None) -> None:
-    """Save Strava tokens to the Prefect JSON block."""
-    logger.info(f"Attempting to save tokens to Prefect JSON Block: {TOKEN_DATA_BLOCK_NAME}")
+    """Save Strava tokens to the Prefect Variable."""
+    logger.info(f"Attempting to save tokens to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
     try:
-        # Create a new JSON block instance with the updated data
-        json_block = JSON(value=tokens)
-        # Save (and overwrite) the block with the new data
-        json_block.save(name=TOKEN_DATA_BLOCK_NAME, overwrite=True)
-        logger.info(f"Successfully saved new token data to Prefect JSON Block: {TOKEN_DATA_BLOCK_NAME}")
+        # Convert tokens dictionary to JSON string
+        token_json = json.dumps(tokens)
+        # Save to Prefect Variable
+        Variable.set(name=TOKEN_DATA_VARIABLE_NAME, value=token_json)
+        logger.info(f"Successfully saved new token data to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
     except Exception as e:
-        logger.error(f"Failed to save tokens to Prefect JSON Block '{TOKEN_DATA_BLOCK_NAME}': {e}")
+        logger.error(f"Failed to save tokens to Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
         raise # Critical failure if we can't save the token
 
 def is_token_expired(expires_at: Any, buffer_minutes: int = 0) -> bool:
@@ -60,7 +70,7 @@ def is_token_expired(expires_at: Any, buffer_minutes: int = 0) -> bool:
 
     return current_time >= (expires_at - buffer_seconds)
 
-def will_token_expire_soon(expires_at: Any, buffer_minutes: int = None) -> bool:
+def will_token_expire_soon(expires_at: Any, buffer_minutes: Optional[int] = None) -> bool:
     """Check if token will expire within the specified buffer time."""
     if buffer_minutes is None:
         buffer_minutes = settings.token_refresh_buffer_minutes
