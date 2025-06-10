@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Database operations flows for Strava activities data."""
 
 from typing import Dict, Any, Optional, Literal
@@ -42,14 +43,14 @@ def create_database_connection():
             result = conn.execute(text("SELECT 1"))
             result.fetchone()
 
-        logger.info("✅ Database connection successful")
+        logger.info("Database connection successful")
         return engine
 
     except SQLAlchemyError as e:
-        logger.error(f"❌ Database connection failed: {e}")
+        logger.error(f"Database connection failed: {e}")
         raise
     except Exception as e:
-        logger.error(f"❌ Unexpected error connecting to database: {e}")
+        logger.error(f"Unexpected error connecting to database: {e}")
         raise
 
 
@@ -353,7 +354,7 @@ def load_data_to_database(
         final_count = get_table_row_count(engine, table_name)
         actual_rows_added = final_count - initial_count
         
-        logger.info(f"✅ Successfully loaded data to '{table_name}'. "
+        logger.info(f"Successfully loaded data to '{table_name}'. "
                    f"Rows added: {actual_rows_added}, Total rows: {final_count}")
         
         return {
@@ -364,13 +365,13 @@ def load_data_to_database(
         }
         
     except SQLAlchemyError as e:
-        logger.error(f"❌ Database error loading data to '{table_name}': {e}")
+        logger.error(f"Database error loading data to '{table_name}': {e}")
         return {
             'success': False,
             'error': f"Database error: {str(e)}"
         }
     except Exception as e:
-        logger.error(f"❌ Unexpected error loading data to '{table_name}': {e}")
+        logger.error(f"Unexpected error loading data to '{table_name}': {e}")
         return {
             'success': False,
             'error': f"Unexpected error: {str(e)}"

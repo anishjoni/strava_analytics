@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Main orchestration flow for the Strava analytics pipeline."""
 
 from datetime import datetime, timedelta
@@ -51,7 +52,7 @@ def strava_analytics_pipeline_flow(
         Dictionary with pipeline execution results
     """
     logger = get_run_logger()
-    logger.info("🚀 Starting Strava Analytics Pipeline")
+    logger.info("Starting Strava Analytics Pipeline")
     
     pipeline_start_time = datetime.now()
     results = {
@@ -63,7 +64,7 @@ def strava_analytics_pipeline_flow(
     
     try:
         # Step 1: Token Management
-        logger.info("📋 Step 1: Proactive Token Management")
+        logger.info("Step 1: Proactive Token Management")
         token_result = proactive_token_management_flow()
         
         if not token_result['success']:
@@ -74,10 +75,10 @@ def strava_analytics_pipeline_flow(
         
         results['steps_completed'].append('token_management')
         results['token_management'] = token_result
-        logger.info("✅ Token management completed successfully")
+        logger.info("Token management completed successfully")
         
         # Step 2: Data Extraction
-        logger.info("📊 Step 2: Data Extraction from Strava API")
+        logger.info("Step 2: Data Extraction from Strava API")
         activities_df = strava_data_extraction_flow(
             after_date=after_date,
             before_date=before_date,
@@ -85,7 +86,7 @@ def strava_analytics_pipeline_flow(
         )
         
         if activities_df.is_empty():
-            logger.warning("⚠️ No activities extracted from API")
+            logger.warning("No activities extracted from API")
             results['steps_completed'].append('data_extraction')
             results['data_extraction'] = {
                 'activities_count': 0,
@@ -97,10 +98,10 @@ def strava_analytics_pipeline_flow(
                 'activities_count': len(activities_df),
                 'columns': activities_df.columns
             }
-            logger.info(f"✅ Data extraction completed: {len(activities_df)} activities")
+            logger.info(f"Data extraction completed: {len(activities_df)} activities")
         
         # Step 3: Data Transformation
-        logger.info("🔄 Step 3: Data Transformation")
+        logger.info("Step 3: Data Transformation")
         transformed_df = strava_data_transformation_flow(activities_df)
         
         results['steps_completed'].append('data_transformation')
@@ -109,11 +110,11 @@ def strava_analytics_pipeline_flow(
             'output_rows': len(transformed_df),
             'final_columns': transformed_df.columns if not transformed_df.is_empty() else []
         }
-        logger.info(f"✅ Data transformation completed: {len(transformed_df)} rows")
+        logger.info(f"Data transformation completed: {len(transformed_df)} rows")
         
         # Step 4: Database Operations
         if not transformed_df.is_empty():
-            logger.info("💾 Step 4: Database Operations")
+            logger.info("Step 4: Database Operations")
             db_result = strava_database_operations_flow(
                 activities_df=transformed_df,
                 table_name=table_name,
@@ -125,14 +126,14 @@ def strava_analytics_pipeline_flow(
             results['database_operations'] = db_result
             
             if db_result['success']:
-                logger.info(f"✅ Database operations completed: {db_result['rows_loaded']} rows loaded")
+                logger.info(f"Database operations completed: {db_result['rows_loaded']} rows loaded")
             else:
                 error_msg = f"Database operations failed: {db_result.get('error')}"
                 logger.error(error_msg)
                 results['errors'].append(error_msg)
                 return results
         else:
-            logger.info("⏭️ Skipping database operations - no data to load")
+            logger.info("Skipping database operations - no data to load")
             results['database_operations'] = {
                 'success': True,
                 'rows_loaded': 0,
@@ -150,8 +151,8 @@ def strava_analytics_pipeline_flow(
             'total_activities_processed': len(transformed_df) if not transformed_df.is_empty() else 0
         })
         
-        logger.info(f"🎉 Pipeline completed successfully in {pipeline_duration}")
-        logger.info(f"📈 Total activities processed: {results['total_activities_processed']}")
+        logger.info(f"Pipeline completed successfully in {pipeline_duration}")
+        logger.info(f"Total activities processed: {results['total_activities_processed']}")
         
         return results
         
@@ -171,7 +172,7 @@ def daily_strava_sync_flow() -> Dict[str, Any]:
     Designed to run daily to keep the database up to date.
     """
     logger = get_run_logger()
-    logger.info("🌅 Starting daily Strava sync")
+    logger.info("Starting daily Strava sync")
     
     # Get activities from the last 7 days to ensure we don't miss anything
     after_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
@@ -184,7 +185,7 @@ def daily_strava_sync_flow() -> Dict[str, Any]:
         remove_duplicates=True
     )
     
-    logger.info(f"🌅 Daily sync completed. Success: {result['success']}")
+    logger.info(f"Daily sync completed. Success: {result['success']}")
     return result
 
 
@@ -195,7 +196,7 @@ def weekly_full_sync_flow() -> Dict[str, Any]:
     Designed to run weekly to ensure data completeness.
     """
     logger = get_run_logger()
-    logger.info("📅 Starting weekly full sync")
+    logger.info("Starting weekly full sync")
     
     result = strava_analytics_pipeline_flow(
         max_pages=200,  # Higher limit for full sync
@@ -204,7 +205,7 @@ def weekly_full_sync_flow() -> Dict[str, Any]:
         remove_duplicates=True
     )
     
-    logger.info(f"📅 Weekly sync completed. Success: {result['success']}")
+    logger.info(f"Weekly sync completed. Success: {result['success']}")
     return result
 
 

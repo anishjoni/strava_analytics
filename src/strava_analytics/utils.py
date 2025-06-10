@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Import libraries
 import json
 from datetime import datetime, timedelta
