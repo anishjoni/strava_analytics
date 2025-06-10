@@ -1,17 +1,17 @@
-# Prefect deployment configuration
+# Prefect deployment configuration for local development
 name: strava-analytics
 prefect-version: 3.4.5
 
-# Build configuration - simplified for local deployment
+# Build configuration - no build steps needed for local deployment
 build: null
 
-# Push configuration
+# Push configuration - no push steps needed for local deployment
 push: null
 
-# Pull configuration - use local files instead of Git
+# Pull configuration - use local files, no Git operations
 pull:
   - prefect.deployments.steps.set_working_directory:
-      directory: .
+      directory: "D:/ML projects/Portfolio/strava_analytics"
 
 # Deployment definitions
 deployments:
@@ -25,7 +25,7 @@ deployments:
     tags: ["strava", "token-management", "automated"]
     parameters: {}
     work_pool:
-      name: default-agent-pool
+      name: process-pool
       work_queue_name: default
 
   # Daily sync - runs every day at 6 AM Toronto time
@@ -39,7 +39,7 @@ deployments:
     parameters:
       max_pages: 5
     work_pool:
-      name: default-agent-pool
+      name: process-pool
       work_queue_name: default
 
   # Weekly full sync - runs every Sunday at 7 AM Toronto time
@@ -53,7 +53,7 @@ deployments:
     parameters:
       max_pages: 100
     work_pool:
-      name: default-agent-pool
+      name: process-pool
       work_queue_name: default
 
   # Manual full pipeline - no schedule, run on demand
@@ -64,5 +64,5 @@ deployments:
     parameters:
       max_pages: 100
     work_pool:
-      name: default-agent-pool
+      name: process-pool
       work_queue_name: default

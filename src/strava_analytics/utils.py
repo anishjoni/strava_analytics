@@ -14,7 +14,8 @@ from prefect import get_run_logger
 
 from strava_analytics.config import settings
 
-logger = get_run_logger()
+# Note: get_run_logger() should only be called within flow/task context
+# We'll get the logger in each function instead
 
 # Define your Prefect Variable name for storing tokens
 TOKEN_DATA_VARIABLE_NAME = "strava-auth-token"
@@ -22,11 +23,22 @@ TOKEN_DATA_VARIABLE_NAME = "strava-auth-token"
 # Utility functions
 def load_tokens() -> Dict[str, Any]:
     """Load Strava tokens from the Prefect Variable."""
-    logger.info(f"Attempting to load tokens from Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
     try:
+        # Only get logger if we're in a flow/task context
+        try:
+            logger = get_run_logger()
+            logger.info(f"Attempting to load tokens from Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
+        except:
+            # If no context, use print for debugging
+            print(f"Attempting to load tokens from Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
+            logger = None
+
         token_json = Variable.get(TOKEN_DATA_VARIABLE_NAME)
         if token_json is None:
-            logger.warning(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' not found. No existing token found.")
+            if logger:
+                logger.warning(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' not found. No existing token found.")
+            else:
+                print(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' not found. No existing token found.")
             return {}
 
         # Parse the JSON string to dictionary
@@ -35,29 +47,57 @@ def load_tokens() -> Dict[str, Any]:
         elif isinstance(token_json, dict):
             tokens = token_json
         else:
-            logger.warning(f"Unexpected token data type: {type(token_json)}")
+            if logger:
+                logger.warning(f"Unexpected token data type: {type(token_json)}")
+            else:
+                print(f"Unexpected token data type: {type(token_json)}")
             return {}
         if not tokens: # If the variable is empty JSON {}
-            logger.warning(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' is empty. No existing token found.")
+            if logger:
+                logger.warning(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' is empty. No existing token found.")
+            else:
+                print(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' is empty. No existing token found.")
             return {}
-        logger.info(f"Successfully loaded token data from variable. Keys: {list(tokens.keys())}")
+        if logger:
+            logger.info(f"Successfully loaded token data from variable. Keys: {list(tokens.keys())}")
+        else:
+            print(f"Successfully loaded token data from variable. Keys: {list(tokens.keys())}")
         return tokens
     except Exception as e:
-        logger.error(f"Failed to load tokens from Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
+        try:
+            logger = get_run_logger()
+            logger.error(f"Failed to load tokens from Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
+        except:
+            print(f"Failed to load tokens from Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
         # If the variable itself doesn't exist, this will also catch it
         return {} #
 
 def save_tokens(tokens: Dict[str, Any], path: Optional[str] = None) -> None:
     """Save Strava tokens to the Prefect Variable."""
-    logger.info(f"Attempting to save tokens to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
     try:
+        # Only get logger if we're in a flow/task context
+        try:
+            logger = get_run_logger()
+            logger.info(f"Attempting to save tokens to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
+        except:
+            # If no context, use print for debugging
+            print(f"Attempting to save tokens to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
+            logger = None
+
         # Convert tokens dictionary to JSON string
         token_json = json.dumps(tokens)
         # Save to Prefect Variable
         Variable.set(name=TOKEN_DATA_VARIABLE_NAME, value=token_json)
-        logger.info(f"Successfully saved new token data to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
+        if logger:
+            logger.info(f"Successfully saved new token data to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
+        else:
+            print(f"Successfully saved new token data to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
     except Exception as e:
-        logger.error(f"Failed to save tokens to Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
+        try:
+            logger = get_run_logger()
+            logger.error(f"Failed to save tokens to Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
+        except:
+            print(f"Failed to save tokens to Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
         raise # Critical failure if we can't save the token
 
 def is_token_expired(expires_at: Any, buffer_minutes: int = 0) -> bool:
