@@ -5,33 +5,49 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import requests
 
+from prefect.blocks.system import Secret
+from prefect.blocks.data import JSON # Import the JSON block
+from prefect.utilities.logging import get_run_logger
+
 # Add the project root to Python path to avoid relative import issues
 
 from strava_analytics.config import settings
 
-# Utility functions
-def load_tokens(path: Optional[str] = None) -> Dict[str, Any]:
-    """Load tokens from JSON file."""
-    if path is None:
-        path = settings.tokens_path
-    else:
-        path = Path(path)
+logger = get_run_logger()
 
-    with open(path, "r") as f:
-       return json.load(f)
+# Define your JSON Block name
+TOKEN_DATA_BLOCK_NAME = "strava-auth-token" 
+
+# Utility functions
+def load_tokens() -> Dict[str, Any]:
+    """Load Strava tokens from the Prefect JSON block."""
+    logger.info(f"Attempting to load tokens from Prefect JSON Block: {TOKEN_DATA_BLOCK_NAME}")
+    try:
+        json_block = JSON.load(TOKEN_DATA_BLOCK_NAME)
+        # The .value attribute of a JSON block holds the deserialized JSON data
+        tokens = json_block.value
+        if not tokens: # If the block is empty JSON {}
+            logger.warning(f"Prefect JSON Block '{TOKEN_DATA_BLOCK_NAME}' is empty. No existing token found.")
+            return {}
+        logger.info(f"Successfully loaded token data from block. Keys: {list(tokens.keys())}")
+        return tokens
+    except Exception as e:
+        logger.error(f"Failed to load tokens from Prefect JSON Block '{TOKEN_DATA_BLOCK_NAME}': {e}")
+        # If the block itself doesn't exist, this will also catch it
+        return {} #
 
 def save_tokens(tokens: Dict[str, Any], path: Optional[str] = None) -> None:
-    """Save tokens to JSON file."""
-    if path is None:
-        path = settings.tokens_path
-    else:
-        path = Path(path)
-
-    # Ensure directory exists
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(path, "w") as f:
-        json.dump(tokens, f, indent=2)
+  """Save Strava tokens to the Prefect JSON block."""
+    logger.info(f"Attempting to save tokens to Prefect JSON Block: {TOKEN_DATA_BLOCK_NAME}")
+    try:
+        # Create a new JSON block instance with the updated data
+        json_block = JSON(value=tokens)
+        # Save (and overwrite) the block with the new data
+        json_block.save(name=TOKEN_DATA_BLOCK_NAME, overwrite=True)
+        logger.info(f"Successfully saved new token data to Prefect JSON Block: {TOKEN_DATA_BLOCK_NAME}")
+    except Exception as e:
+        logger.error(f"Failed to save tokens to Prefect JSON Block '{TOKEN_DATA_BLOCK_NAME}': {e}")
+        raise # Critical failure if we can't save the token
 
 def is_token_expired(expires_at: Any, buffer_minutes: int = 0) -> bool:
     """Check if token is expired or will expire within buffer_minutes."""
