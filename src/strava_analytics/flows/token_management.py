@@ -86,12 +86,17 @@ def refresh_access_token(force_refresh: bool = False) -> Dict[str, Any]:
     try:
         tokens = load_tokens()
         
-        # Get client credentials from tokens or settings
-        client_id = tokens.get('client_id') or settings.strava_client_id
-        client_secret = tokens.get('client_secret') or settings.strava_client_secret
-        
+        # Get client credentials from secret blocks
+        from prefect.blocks.system import Secret
+        strava_secrets = Secret.load("strava-api-credentials")
+        client_id = strava_secrets.get("strava-client-id")
+        client_secret = strava_secrets.get("strava-client-secret")
         if not client_id or not client_secret:
-            raise ValueError("Client ID and Client Secret must be provided")
+            raise ValueError("Client ID and Client Secret not found in Prefect Secret block 'strava-api-credentials'")
+        
+        # Get client credentials from tokens or settings
+        # client_id = tokens.get('client_id') or settings.strava_client_id
+        # client_secret = tokens.get('client_secret') or settings.strava_client_secret
         
         logger.info(f"Refreshing token (force_refresh={force_refresh})")
         
@@ -146,6 +151,8 @@ def token_refresh_flow(force_refresh: bool = False) -> Dict[str, Any]:
     
     # Check current token status
     token_status = check_token_status()
+
+    logger.info(token_status)
     
     if not token_status['has_valid_token']:
         logger.error(f"No valid token available: {token_status.get('error', 'Unknown error')}")
