@@ -135,6 +135,8 @@ data/tokens.json
 # Prefect
 .prefect/
 prefect.db
+*-agent/
+strava_analytics-agent/
 
 # Testing
 .coverage

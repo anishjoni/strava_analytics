@@ -9,7 +9,9 @@ build: null
 push: null
 
 # Pull configuration - use local files instead of Git
-pull: null
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: .
 
 # Deployment definitions
 deployments:
