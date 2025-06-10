@@ -1,7 +1,7 @@
 """Main orchestration flow for the Strava analytics pipeline."""
 
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Literal
 
 from prefect import flow, get_run_logger
 # Note: Deployment creation is now handled via prefect.yaml and CLI
@@ -27,7 +27,7 @@ def strava_analytics_pipeline_flow(
     before_date: Optional[str] = None,
     max_pages: int = 100,
     table_name: str = 'activities',
-    if_exists: str = 'append',
+    if_exists: Literal['fail', 'replace', 'append'] = 'append',
     remove_duplicates: bool = True
 ) -> Dict[str, Any]:
     """

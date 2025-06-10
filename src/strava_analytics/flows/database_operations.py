@@ -1,6 +1,6 @@
 """Database operations flows for Strava activities data."""
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Literal
 import polars as pl
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -25,18 +25,26 @@ from strava_analytics.config import settings
 def create_database_connection():
     """Create and test database connection."""
     logger = get_run_logger()
-    
+
     try:
-        engine = create_engine(settings.database_url, echo=False)
-        
+        # Create engine with proper encoding settings
+        engine = create_engine(
+            settings.database_url,
+            echo=False,
+            connect_args={
+                'charset': 'utf8mb4',
+                'use_unicode': True
+            }
+        )
+
         # Test the connection
         with engine.connect() as conn:
             result = conn.execute(text("SELECT 1"))
             result.fetchone()
-        
+
         logger.info("✅ Database connection successful")
         return engine
-        
+
     except SQLAlchemyError as e:
         logger.error(f"❌ Database connection failed: {e}")
         raise
@@ -120,17 +128,19 @@ def check_for_duplicates(df: pd.DataFrame, id_column: str = 'activity_id') -> Di
         duplicate_mask = df.duplicated(subset=[id_column], keep=False)
         duplicate_count = duplicate_mask.sum()
         has_duplicates = duplicate_count > 0
-        
+        duplicate_ids = []
+
         if has_duplicates:
             duplicate_ids = df[duplicate_mask][id_column].unique()
             logger.warning(f"Found {duplicate_count} duplicate activities with IDs: {duplicate_ids}")
+            duplicate_ids = duplicate_ids.tolist()
         else:
             logger.info("No duplicate activities found")
-        
+
         return {
             'has_duplicates': has_duplicates,
             'duplicate_count': duplicate_count,
-            'duplicate_ids': duplicate_ids.tolist() if has_duplicates else []
+            'duplicate_ids': duplicate_ids
         }
         
     except Exception as e:
@@ -274,6 +284,15 @@ def prepare_dataframe_for_database(df: pd.DataFrame) -> pd.DataFrame:
                 )
                 logger.info(f"Converted {col} to string format")
 
+        # Handle text columns to ensure proper UTF-8 encoding
+        text_columns = ['activity_name', 'description', 'location_city', 'location_state', 'location_country']
+        for col in text_columns:
+            if col in df_clean.columns:
+                df_clean[col] = df_clean[col].apply(
+                    lambda x: str(x).encode('utf-8', errors='ignore').decode('utf-8') if x is not None else x
+                )
+                logger.info(f"Ensured UTF-8 encoding for {col}")
+
         # Handle any other numpy data types
         for col in df_clean.columns:
             if df_clean[col].dtype.name.startswith('object'):
@@ -298,7 +317,7 @@ def load_data_to_database(
     engine,
     df: pd.DataFrame,
     table_name: str,
-    if_exists: str = 'append'
+    if_exists: Literal['fail', 'replace', 'append'] = 'append'
 ) -> Dict[str, Any]:
     """Load DataFrame to database table."""
     logger = get_run_logger()
@@ -362,7 +381,7 @@ def load_data_to_database(
 def strava_database_operations_flow(
     activities_df: pl.DataFrame,
     table_name: str = 'activities',
-    if_exists: str = 'append',
+    if_exists: Literal['fail', 'replace', 'append'] = 'append',
     remove_duplicates_flag: bool = True
 ) -> Dict[str, Any]:
     """

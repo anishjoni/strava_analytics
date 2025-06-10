@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Get the database connection URL."""
-        return f"mysql+mysqlconnector://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        return f"mysql+mysqlconnector://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}?charset=utf8mb4"
 
     @property
     def data_path(self) -> Path:
