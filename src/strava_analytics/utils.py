@@ -4,7 +4,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Any, Optional
 import requests
-from .config import settings
+
+# Add the project root to Python path to avoid relative import issues
+
+from strava_analytics.config import settings
 
 # Utility functions
 def load_tokens(path: Optional[str] = None) -> Dict[str, Any]:

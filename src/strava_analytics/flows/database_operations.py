@@ -7,10 +7,18 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from prefect import flow, task, get_run_logger
-from prefect.tasks import task_input_hash
-from prefect.cache_policies import INPUTS
+from prefect.cache_policies import NO_CACHE
 
-from ..config import settings
+# Import using absolute imports to avoid relative import issues
+import sys
+import os
+
+# Add the project root to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from strava_analytics.config import settings
 
 
 @task(retries=3, retry_delay_seconds=30)
@@ -37,7 +45,7 @@ def create_database_connection():
         raise
 
 
-@task
+@task(cache_policy=NO_CACHE)
 def check_table_exists(engine, table_name: str) -> bool:
     """Check if a table exists in the database."""
     logger = get_run_logger()
@@ -60,7 +68,7 @@ def check_table_exists(engine, table_name: str) -> bool:
         raise
 
 
-@task
+@task(cache_policy=NO_CACHE)
 def get_table_row_count(engine, table_name: str) -> int:
     """Get the current row count of a table."""
     logger = get_run_logger()
@@ -130,6 +138,92 @@ def check_for_duplicates(df: pd.DataFrame, id_column: str = 'activity_id') -> Di
         return {'has_duplicates': False, 'duplicate_count': 0, 'error': str(e)}
 
 
+@task(cache_policy=NO_CACHE)
+def check_existing_activities_in_database(engine, df: pd.DataFrame, id_column: str = 'activity_id') -> Dict[str, Any]:
+    """Check which activities already exist in the database."""
+    logger = get_run_logger()
+
+    if df.empty:
+        return {'existing_count': 0, 'new_count': 0, 'existing_ids': []}
+
+    if id_column not in df.columns:
+        logger.warning(f"ID column '{id_column}' not found in DataFrame")
+        return {'existing_count': 0, 'new_count': len(df), 'existing_ids': []}
+
+    try:
+        # Get list of activity IDs from the DataFrame
+        activity_ids = df[id_column].tolist()
+
+        # Check if table exists
+        if not check_table_exists(engine, 'activities'):
+            logger.info("Activities table doesn't exist - all activities are new")
+            return {
+                'existing_count': 0,
+                'new_count': len(df),
+                'existing_ids': []
+            }
+
+        # Query database for existing activity IDs
+        with engine.connect() as conn:
+            # Create a comma-separated string of IDs for the query
+            id_list = ','.join(map(str, activity_ids))
+            query = text(f"SELECT {id_column} FROM activities WHERE {id_column} IN ({id_list})")
+            result = conn.execute(query)
+            existing_ids = [row[0] for row in result.fetchall()]
+
+        existing_count = len(existing_ids)
+        new_count = len(df) - existing_count
+
+        logger.info(f"Found {existing_count} existing activities, {new_count} new activities")
+
+        return {
+            'existing_count': existing_count,
+            'new_count': new_count,
+            'existing_ids': existing_ids
+        }
+
+    except Exception as e:
+        logger.error(f"Error checking existing activities: {e}")
+        # If we can't check, assume all are new to avoid data loss
+        return {
+            'existing_count': 0,
+            'new_count': len(df),
+            'existing_ids': [],
+            'error': str(e)
+        }
+
+
+@task
+def filter_new_activities(df: pd.DataFrame, existing_ids: list, id_column: str = 'activity_id') -> pd.DataFrame:
+    """Filter DataFrame to only include new activities (not in existing_ids)."""
+    logger = get_run_logger()
+
+    if df.empty or not existing_ids:
+        logger.info("No existing activities to filter out")
+        return df
+
+    if id_column not in df.columns:
+        logger.warning(f"ID column '{id_column}' not found in DataFrame")
+        return df
+
+    try:
+        original_count = len(df)
+        # Filter out activities that already exist in database
+        new_activities_df = df[~df[id_column].isin(existing_ids)]
+        final_count = len(new_activities_df)
+        filtered_count = original_count - final_count
+
+        logger.info(f"Filtered out {filtered_count} existing activities. "
+                   f"Original: {original_count}, New: {final_count}")
+
+        return new_activities_df
+
+    except Exception as e:
+        logger.error(f"Error filtering new activities: {e}")
+        # If filtering fails, return original to avoid data loss
+        return df
+
+
 @task
 def remove_duplicates(df: pd.DataFrame, id_column: str = 'activity_id') -> pd.DataFrame:
     """Remove duplicate activities, keeping the first occurrence."""
@@ -162,15 +256,53 @@ def remove_duplicates(df: pd.DataFrame, id_column: str = 'activity_id') -> pd.Da
 
 
 @task(retries=2, retry_delay_seconds=60)
+def prepare_dataframe_for_database(df: pd.DataFrame) -> pd.DataFrame:
+    """Prepare DataFrame for database insertion by handling problematic data types."""
+    logger = get_run_logger()
+
+    try:
+        # Create a copy to avoid modifying the original
+        df_clean = df.copy()
+
+        # Handle coordinate columns (convert numpy arrays to strings)
+        coordinate_columns = ['start_latlng', 'end_latlng']
+        for col in coordinate_columns:
+            if col in df_clean.columns:
+                # Convert numpy arrays/lists to string representation
+                df_clean[col] = df_clean[col].apply(
+                    lambda x: str(x) if x is not None and hasattr(x, '__iter__') else x
+                )
+                logger.info(f"Converted {col} to string format")
+
+        # Handle any other numpy data types
+        for col in df_clean.columns:
+            if df_clean[col].dtype.name.startswith('object'):
+                # Check if column contains numpy arrays
+                sample_val = df_clean[col].dropna().iloc[0] if not df_clean[col].dropna().empty else None
+                if sample_val is not None and hasattr(sample_val, '__array__'):
+                    df_clean[col] = df_clean[col].apply(
+                        lambda x: str(x) if x is not None else x
+                    )
+                    logger.info(f"Converted {col} from numpy array to string")
+
+        logger.info(f"DataFrame prepared for database insertion. Shape: {df_clean.shape}")
+        return df_clean
+
+    except Exception as e:
+        logger.error(f"Error preparing DataFrame for database: {e}")
+        raise
+
+
+@task(retries=2, retry_delay_seconds=60, cache_policy=NO_CACHE)
 def load_data_to_database(
-    engine, 
-    df: pd.DataFrame, 
-    table_name: str, 
+    engine,
+    df: pd.DataFrame,
+    table_name: str,
     if_exists: str = 'append'
 ) -> Dict[str, Any]:
     """Load DataFrame to database table."""
     logger = get_run_logger()
-    
+
     if df.empty:
         logger.warning("Empty DataFrame provided - no data to load")
         return {
@@ -178,15 +310,18 @@ def load_data_to_database(
             'rows_loaded': 0,
             'message': 'No data to load'
         }
-    
+
     try:
         logger.info(f"Loading {len(df)} rows to table '{table_name}' with if_exists='{if_exists}'")
-        
+
+        # Prepare DataFrame for database insertion
+        df_prepared = prepare_dataframe_for_database(df)
+
         # Get row count before loading
         initial_count = get_table_row_count(engine, table_name) if check_table_exists(engine, table_name) else 0
-        
+
         # Load data to database
-        rows_affected = df.to_sql(
+        rows_affected = df_prepared.to_sql(
             name=table_name,
             con=engine,
             if_exists=if_exists,
@@ -260,13 +395,21 @@ def strava_database_operations_flow(
         # Convert to Pandas DataFrame
         pandas_df = convert_polars_to_pandas(activities_df)
         
-        # Check for duplicates
+        # Check for duplicates within the current batch
         duplicate_info = check_for_duplicates(pandas_df)
-        
+
         # Remove duplicates if requested
         if remove_duplicates_flag and duplicate_info['has_duplicates']:
             pandas_df = remove_duplicates(pandas_df)
-        
+
+        # Check which activities already exist in the database
+        existing_check = check_existing_activities_in_database(engine, pandas_df)
+
+        # Filter to only new activities
+        if existing_check['existing_count'] > 0:
+            pandas_df = filter_new_activities(pandas_df, existing_check['existing_ids'])
+            logger.info(f"Filtered to {len(pandas_df)} new activities (skipped {existing_check['existing_count']} existing)")
+
         # Load data to database
         load_result = load_data_to_database(
             engine=engine,
@@ -282,6 +425,7 @@ def strava_database_operations_flow(
             'rows_loaded': load_result.get('rows_loaded', 0),
             'total_rows_in_table': load_result.get('total_rows_in_table', 0),
             'duplicate_info': duplicate_info,
+            'existing_activities': existing_check,
             'table_name': table_name
         }
         

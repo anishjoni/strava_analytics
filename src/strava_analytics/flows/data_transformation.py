@@ -19,8 +19,8 @@ def select_core_columns(df: pl.DataFrame) -> pl.DataFrame:
     
     # Define the columns we want to keep
     core_columns = [
-        "id", "name", "distance", "moving_time", "total_elevation_gain", 
-        "sport_type", "start_date_local", "gear_id", "start_latlng", 
+        "id", "name", "distance", "moving_time", "total_elevation_gain",
+        "sport_type", "start_date_local", "gear_id", "start_latlng",
         "end_latlng", "average_speed", "max_speed", "pr_count"
     ]
     
@@ -153,6 +153,49 @@ def apply_data_types(df: pl.DataFrame) -> pl.DataFrame:
 
 
 @task
+def extract_coordinates(df: pl.DataFrame) -> pl.DataFrame:
+    """Extract latitude and longitude from coordinate arrays."""
+    logger = get_run_logger()
+    logger.info("Extracting coordinates from latlng arrays")
+
+    try:
+        df_with_coords = df.with_columns([
+            # Extract start coordinates
+            pl.when(pl.col("start_latlng").is_not_null())
+            .then(pl.col("start_latlng").list.get(0))
+            .otherwise(None)
+            .alias("start_latitude"),
+
+            pl.when(pl.col("start_latlng").is_not_null())
+            .then(pl.col("start_latlng").list.get(1))
+            .otherwise(None)
+            .alias("start_longitude"),
+
+            # Extract end coordinates
+            pl.when(pl.col("end_latlng").is_not_null())
+            .then(pl.col("end_latlng").list.get(0))
+            .otherwise(None)
+            .alias("end_latitude"),
+
+            pl.when(pl.col("end_latlng").is_not_null())
+            .then(pl.col("end_latlng").list.get(1))
+            .otherwise(None)
+            .alias("end_longitude")
+        ])
+
+        # Drop the original latlng columns since we have separate lat/lng now
+        df_final = df_with_coords.drop(["start_latlng", "end_latlng"])
+
+        logger.info("Successfully extracted coordinates to separate columns")
+        return df_final
+
+    except Exception as e:
+        logger.error(f"Error extracting coordinates: {e}")
+        # If extraction fails, just drop the latlng columns to avoid schema issues
+        return df.drop(["start_latlng", "end_latlng"])
+
+
+@task
 def add_feature_engineering(df: pl.DataFrame) -> pl.DataFrame:
     """Add feature engineering columns."""
     logger = get_run_logger()
@@ -231,10 +274,13 @@ def strava_data_transformation_flow(raw_activities_df: pl.DataFrame) -> pl.DataF
     # Step 3: Drop original columns
     df_cleaned = drop_original_columns(df_derived)
     
-    # Step 4: Apply data types
-    df_typed = apply_data_types(df_cleaned)
-    
-    # Step 5: Add feature engineering
+    # Step 4: Extract coordinates to separate columns
+    df_coords = extract_coordinates(df_cleaned)
+
+    # Step 5: Apply data types
+    df_typed = apply_data_types(df_coords)
+
+    # Step 6: Add feature engineering
     df_final = add_feature_engineering(df_typed)
     
     logger.info(f"Data transformation completed. Final shape: {df_final.shape}")

@@ -9,9 +9,18 @@ from prefect import flow, task, get_run_logger
 from prefect.tasks import task_input_hash
 from prefect.cache_policies import INPUTS
 
-from ..config import settings
-from ..utils import load_tokens
-from .token_management import token_refresh_flow
+# Import using absolute imports to avoid relative import issues
+import sys
+import os
+
+# Add the project root to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from strava_analytics.config import settings
+from strava_analytics.utils import load_tokens
+from strava_analytics.flows.token_management import token_refresh_flow
 
 
 @task(

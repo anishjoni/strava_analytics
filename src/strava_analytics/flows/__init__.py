@@ -9,22 +9,30 @@ This module contains all the Prefect flows for the automated Strava data pipelin
 - Main pipeline orchestration
 """
 
-# Import all flows for easy access
-from .token_management import (
+# Import all flows for easy access using absolute imports
+import sys
+import os
+
+# Add the project root to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from strava_analytics.flows.token_management import (
     proactive_token_management_flow,
     token_refresh_flow,
     check_token_status,
     refresh_access_token
 )
 
-from .data_extraction import (
+from strava_analytics.flows.data_extraction import (
     strava_data_extraction_flow,
     get_valid_access_token,
     fetch_activities_page,
     fetch_all_activities
 )
 
-from .data_transformation import (
+from strava_analytics.flows.data_transformation import (
     strava_data_transformation_flow,
     select_core_columns,
     create_derived_columns,
@@ -32,13 +40,13 @@ from .data_transformation import (
     add_feature_engineering
 )
 
-from .database_operations import (
+from strava_analytics.flows.database_operations import (
     strava_database_operations_flow,
     create_database_connection,
     load_data_to_database
 )
 
-from .main_pipeline import (
+from strava_analytics.flows.main_pipeline import (
     strava_analytics_pipeline_flow,
     daily_strava_sync_flow,
     weekly_full_sync_flow

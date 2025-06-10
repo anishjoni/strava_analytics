@@ -85,6 +85,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/docs/learning_log_files/
 
 # mypy
 .mypy_cache/

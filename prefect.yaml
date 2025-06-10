@@ -2,22 +2,14 @@
 name: strava-analytics
 prefect-version: 3.4.5
 
-# Build configuration
-build:
-  - prefect.deployments.steps.run_shell_script:
-      id: get-commit-hash
-      script: git rev-parse --short HEAD
-      stream_output: false
+# Build configuration - simplified for local deployment
+build: null
 
-# Push configuration  
-push:
-  - prefect.deployments.steps.set_working_directory:
-      directory: /mnt/persist/workspace
+# Push configuration
+push: null
 
-# Pull configuration
-pull:
-  - prefect.deployments.steps.set_working_directory:
-      directory: /mnt/persist/workspace
+# Pull configuration - use local files instead of Git
+pull: null
 
 # Deployment definitions
 deployments:
@@ -34,28 +26,30 @@ deployments:
       name: default-agent-pool
       work_queue_name: default
 
-  # Daily sync - runs every day at 6 AM UTC
+  # Daily sync - runs every day at 6 AM Toronto time
   - name: daily-strava-sync
-    entrypoint: src/strava_analytics/flows/main_pipeline.py:daily_strava_sync_flow
+    entrypoint: src/strava_analytics/flows/main_pipeline.py:strava_analytics_pipeline_flow
     schedule:
       cron: "0 6 * * *"
-      timezone: "UTC"
+      timezone: "America/Toronto"
     description: "Daily sync of recent Strava activities"
     tags: ["strava", "daily-sync", "automated"]
-    parameters: {}
+    parameters:
+      max_pages: 5
     work_pool:
       name: default-agent-pool
       work_queue_name: default
 
-  # Weekly full sync - runs every Sunday at 2 AM UTC
+  # Weekly full sync - runs every Sunday at 7 AM Toronto time
   - name: weekly-strava-sync
-    entrypoint: src/strava_analytics/flows/main_pipeline.py:weekly_full_sync_flow
+    entrypoint: src/strava_analytics/flows/main_pipeline.py:strava_analytics_pipeline_flow
     schedule:
-      cron: "0 2 * * 0"
-      timezone: "UTC"
+      cron: "0 7 * * 0"
+      timezone: "America/Toronto"
     description: "Weekly full sync of all Strava activities"
     tags: ["strava", "weekly-sync", "automated"]
-    parameters: {}
+    parameters:
+      max_pages: 100
     work_pool:
       name: default-agent-pool
       work_queue_name: default
@@ -66,10 +60,7 @@ deployments:
     description: "Manual execution of the full Strava analytics pipeline"
     tags: ["strava", "manual", "full-pipeline"]
     parameters:
-      max_pages: 200
-      table_name: "activities"
-      if_exists: "append"
-      remove_duplicates: true
+      max_pages: 100
     work_pool:
       name: default-agent-pool
       work_queue_name: default

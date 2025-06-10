@@ -8,8 +8,9 @@ from prefect import flow, task, get_run_logger
 from prefect.tasks import task_input_hash
 from prefect.cache_policies import INPUTS
 
-from ..config import settings
-from ..utils import (
+
+from strava_analytics.config import settings
+from strava_analytics.utils import (
     load_tokens,
     save_tokens,
     refresh_token_if_needed,
@@ -39,13 +40,19 @@ def check_token_status() -> Dict[str, Any]:
             raise ValueError(f"Missing required token fields: {missing_fields}")
         
         expires_at = tokens['expires_at']
+        # Convert expires_at to int if it's a string
+        if isinstance(expires_at, str):
+            expires_at_int = int(float(expires_at))
+        else:
+            expires_at_int = expires_at
+
         time_until_expiry = get_time_until_token_expires(expires_at)
         will_expire_soon = will_token_expire_soon(expires_at)
-        
+
         status = {
             'has_valid_token': True,
             'expires_at': expires_at,
-            'expires_at_datetime': datetime.fromtimestamp(expires_at),
+            'expires_at_datetime': datetime.fromtimestamp(expires_at_int),
             'time_until_expiry': time_until_expiry,
             'will_expire_soon': will_expire_soon,
             'buffer_minutes': settings.token_refresh_buffer_minutes
@@ -96,12 +103,19 @@ def refresh_access_token(force_refresh: bool = False) -> Dict[str, Any]:
         
         # Get updated token info
         updated_tokens = load_tokens()
-        
+
+        # Convert expires_at to int if it's a string
+        expires_at = updated_tokens['expires_at']
+        if isinstance(expires_at, str):
+            expires_at_int = int(float(expires_at))
+        else:
+            expires_at_int = expires_at
+
         result = {
             'success': True,
             'access_token': new_access_token,
-            'expires_at': updated_tokens['expires_at'],
-            'expires_at_datetime': datetime.fromtimestamp(updated_tokens['expires_at']),
+            'expires_at': expires_at,
+            'expires_at_datetime': datetime.fromtimestamp(expires_at_int),
             'refreshed_at': datetime.now()
         }
         
