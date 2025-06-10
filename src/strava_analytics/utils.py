@@ -43,7 +43,21 @@ def load_tokens() -> Dict[str, Any]:
 
         # Parse the JSON string to dictionary
         if isinstance(token_json, str):
-            tokens = json.loads(token_json)
+            # Check if the string is empty or whitespace
+            if not token_json.strip():
+                if logger:
+                    logger.warning(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' contains empty string.")
+                else:
+                    print(f"Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}' contains empty string.")
+                return {}
+            try:
+                tokens = json.loads(token_json)
+            except json.JSONDecodeError as e:
+                if logger:
+                    logger.error(f"Invalid JSON in Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
+                else:
+                    print(f"Invalid JSON in Prefect Variable '{TOKEN_DATA_VARIABLE_NAME}': {e}")
+                return {}
         elif isinstance(token_json, dict):
             tokens = token_json
         else:
