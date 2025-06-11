@@ -112,12 +112,15 @@ def refresh_access_token(force_refresh: bool = False) -> Dict[str, Any]:
         
         # Get client credentials from secret blocks
         from prefect.blocks.system import Secret
-        strava_secrets = Secret.load("strava-api-credentials")
-        client_id = strava_secrets.get("strava-client-id")
-        client_secret = strava_secrets.get("strava-client-secret")
-        logger.info(client_id)
+        #strava_secrets = Secret.load("strava-api-credentials")
+        client_id_block = Secret.load("strava-client-id")
+        client_id = client_id_block.get()
+        
+        client_secret_block = Secret.load("strava-client-secret")
+        client_secret = client_secret_block.get()
+        logger.info(f"Retrieved client ID: {client_id}")
         if not client_id or not client_secret:
-            raise ValueError("Client ID and Client Secret not found in Prefect Secret block 'strava-api-credentials'")
+            raise ValueError("Client ID and Client Secret not found in Prefect Secret block 'strava-client-id' & 'strava-client-secret' ")
         
         # Get client credentials from tokens or settings
         # client_id = tokens.get('client_id') or settings.strava_client_id
