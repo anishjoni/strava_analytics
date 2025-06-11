@@ -101,7 +101,7 @@ def save_tokens(tokens: Dict[str, Any], path: Optional[str] = None) -> None:
         # Convert tokens dictionary to JSON string
         token_json = json.dumps(tokens)
         # Save to Prefect Variable
-        Variable.set(name=TOKEN_DATA_VARIABLE_NAME, value=token_json)
+        Variable.set(name=TOKEN_DATA_VARIABLE_NAME, value=token_json, overwrite=True)
         if logger:
             logger.info(f"Successfully saved new token data to Prefect Variable: {TOKEN_DATA_VARIABLE_NAME}")
         else:
